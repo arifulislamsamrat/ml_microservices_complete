@@ -50,7 +50,9 @@ class AdvancedMLModel:
     def __init__(self):
         self.classes = ["cat", "dog", "bird", "fish", "rabbit", "horse", "elephant", "tiger"]
         self.model_version = "v2.1.0"
-        self.feature_weights = np.random.random(len(self.classes))
+        # Fixed: Create feature weights that match the number of features (not classes)
+        # We extract 5 features, so we need 5 weights
+        self.feature_weights = np.random.random(5)  # Changed from len(self.classes) to 5
         logger.info(f"Advanced ML model initialized - Version: {self.model_version}")
         logger.info(f"Available classes: {self.classes}")
 
@@ -65,9 +67,11 @@ class AdvancedMLModel:
             hash(input_text.lower()) % 100,  # Text hash feature
         ]
 
-        # Normalize features
+        # Normalize features to prevent overflow
         features = np.array(features, dtype=float)
-        features = features / (np.linalg.norm(features) + 1e-8)
+        # Add small epsilon to prevent division by zero
+        norm = np.linalg.norm(features) + 1e-8
+        features = features / norm
         return features
 
     def predict(self, input_text: str) -> Dict[str, Any]:
@@ -80,7 +84,6 @@ class AdvancedMLModel:
         features = self.extract_features(input_text)
 
         # Simulate model computation
-        # In reality, this would be actual ML model inference
         text_lower = input_text.lower()
 
         # Enhanced prediction logic based on keywords
@@ -94,8 +97,10 @@ class AdvancedMLModel:
             if class_name in text_lower:
                 prob += 0.4
 
-            # Feature-based adjustment
-            prob += np.dot(features, self.feature_weights) * 0.1
+            # Feature-based adjustment - Fixed the dimension mismatch
+            # Use sum of features as a single score instead of dot product
+            feature_score = np.sum(features) * 0.1
+            prob += feature_score
 
             class_probabilities[class_name] = prob
 

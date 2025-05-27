@@ -2,26 +2,22 @@ version: '3.8'
 
 services:
   service-a:
-    build: ./service_a
+    build:
+      context: ./service_a
+      dockerfile: Dockerfile
+    container_name: ml-service-a
     ports:
       - "8000:8000"
     environment:
       - SERVICE_B_URL=http://service-b:8001/predict
-      - LOG_LEVEL=WARNING
+      - LOG_LEVEL=INFO
       - PORT=8000
     depends_on:
       service-b:
         condition: service_healthy
     networks:
       - ml-network
-    restart: always
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -30,22 +26,18 @@ services:
       start_period: 40s
 
   service-b:
-    build: ./service_b
+    build:
+      context: ./service_b
+      dockerfile: Dockerfile
+    container_name: ml-service-b
     ports:
       - "8001:8001"
     environment:
-      - LOG_LEVEL=WARNING
+      - LOG_LEVEL=INFO
       - PORT=8001
     networks:
       - ml-network
-    restart: always
-    deploy:
-      replicas: 3
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 512M
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 30s
@@ -56,6 +48,8 @@ services:
 networks:
   ml-network:
     driver: bridge
+    name: ml-microservices-network
 
 volumes:
   app-data:
+    name: ml-microservices-data
